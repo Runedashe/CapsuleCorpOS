@@ -1,0 +1,102 @@
+#!/bin/bash
+# ============================================================
+# ccos-vault -- CapsuleCorpOS Encrypted Vault
+# AES-256 encryption via openssl
+# Crystal Globe Pty Ltd | Android #23
+# ============================================================
+
+RESET="\e[0m"
+FG_CYAN="\e[38;2;0;220;255m"
+FG_GREEN="\e[38;2;0;255;140m"
+FG_RED="\e[38;2;255;60;60m"
+FG_YELLOW="\e[38;2;255;230;0m"
+BOLD="\e[1m"
+
+VAULT_DIR="$HOME/.ccos-vault"
+mkdir -p "$VAULT_DIR"
+
+print_header() {
+    echo -e "${FG_CYAN}${BOLD}"
+    echo "  ╔══════════════════════════════════════╗"
+    echo "  ║   ccos-vault -- Encrypted Storage    ║"
+    echo "  ║   AES-256 | Crystal Globe Pty Ltd    ║"
+    echo "  ╚══════════════════════════════════════╝"
+    echo -e "${RESET}"
+}
+
+vault_store() {
+    local filename="$1"
+    if [ -z "$filename" ]; then
+        echo -e "${FG_RED}Usage: ccos-vault store <file>${RESET}"
+        exit 1
+    fi
+    if [ ! -f "$filename" ]; then
+        echo -e "${FG_RED}[VAULT] File not found: $filename${RESET}"
+        exit 1
+    fi
+    local basename=$(basename "$filename")
+    read -rsp "  Enter vault passphrase: " PASS; echo
+    openssl enc -aes-256-cbc -salt -pbkdf2 \
+        -in "$filename" \
+        -out "$VAULT_DIR/${basename}.cg-enc" \
+        -pass "pass:$PASS" 2>/dev/null
+    echo -e "${FG_GREEN}[VAULT] Stored: ${basename}.cg-enc${RESET}"
+}
+
+vault_retrieve() {
+    local filename="$1"
+    if [ -z "$filename" ]; then
+        echo -e "${FG_RED}Usage: ccos-vault retrieve <encrypted-file>${RESET}"
+        exit 1
+    fi
+    local outname="${filename%.cg-enc}"
+    read -rsp "  Enter vault passphrase: " PASS; echo
+    openssl enc -aes-256-cbc -d -pbkdf2 \
+        -in "$VAULT_DIR/$filename" \
+        -out "./$outname" \
+        -pass "pass:$PASS" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo -e "${FG_GREEN}[VAULT] Retrieved: ./${outname}${RESET}"
+    else
+        echo -e "${FG_RED}[VAULT] Decryption failed. Wrong passphrase?${RESET}"
+    fi
+}
+
+vault_list() {
+    echo -e "${FG_CYAN}[VAULT] Stored items in ${VAULT_DIR}:${RESET}"
+    ls -lh "$VAULT_DIR"/*.cg-enc 2>/dev/null | \
+        awk '{print "  " $NF " (" $5 ")"}' || \
+        echo "  (vault is empty)"
+}
+
+vault_delete() {
+    local filename="$1"
+    if [ -z "$filename" ]; then
+        echo -e "${FG_RED}Usage: ccos-vault delete <encrypted-file>${RESET}"
+        exit 1
+    fi
+    rm -f "$VAULT_DIR/$filename"
+    echo -e "${FG_GREEN}[VAULT] Deleted: $filename${RESET}"
+}
+
+print_header
+
+case "$1" in
+    store)    vault_store "$2" ;;
+    retrieve) vault_retrieve "$2" ;;
+    list)     vault_list ;;
+    delete)   vault_delete "$2" ;;
+    help|"")
+        echo "  Usage: ccos-vault <command> [file]"
+        echo ""
+        echo "  Commands:"
+        echo "    store <file>              Encrypt and store a file"
+        echo "    retrieve <encrypted-file> Decrypt and retrieve a file"
+        echo "    list                      List vault contents"
+        echo "    delete <encrypted-file>   Remove from vault"
+        echo ""
+        ;;
+    *)
+        echo -e "${FG_RED}Unknown command: $1${RESET}"
+        ;;
+esac
