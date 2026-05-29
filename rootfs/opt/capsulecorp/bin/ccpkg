@@ -1,0 +1,100 @@
+#!/bin/bash
+# ============================================================
+# ccpkg -- CapsuleCorpOS Package Manager
+# Crystal Globe Pty Ltd | Android #23
+# Wraps apt with Crystal Globe branding + registry logging
+# ============================================================
+
+RESET="\e[0m"
+FG_CYAN="\e[38;2;0;220;255m"
+FG_GREEN="\e[38;2;0;255;140m"
+FG_RED="\e[38;2;255;60;60m"
+FG_YELLOW="\e[38;2;255;230;0m"
+BOLD="\e[1m"
+
+LOG="/opt/capsulecorp/logs/ccpkg.log"
+mkdir -p /opt/capsulecorp/logs
+
+log_action() {
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] ccpkg $*" >> "$LOG"
+}
+
+print_header() {
+    echo -e "${FG_CYAN}${BOLD}"
+    echo "  ╔══════════════════════════════════════╗"
+    echo "  ║   ccpkg -- CapsuleCorpOS Package Mgr ║"
+    echo "  ║   Crystal Globe Pty Ltd              ║"
+    echo "  ╚══════════════════════════════════════╝"
+    echo -e "${RESET}"
+}
+
+case "$1" in
+    install)
+        shift
+        print_header
+        echo -e "${FG_CYAN}[ccpkg]${RESET} Installing: $*"
+        log_action "INSTALL $*"
+        apt-get install -y "$@" && \
+            echo -e "${FG_GREEN}[OK]${RESET} Installed: $*" && \
+            log_action "INSTALL_OK $*" || \
+            echo -e "${FG_RED}[FAIL]${RESET} Could not install: $*"
+        ;;
+    remove)
+        shift
+        print_header
+        echo -e "${FG_CYAN}[ccpkg]${RESET} Removing: $*"
+        log_action "REMOVE $*"
+        apt-get remove -y "$@" && \
+            echo -e "${FG_GREEN}[OK]${RESET} Removed: $*"
+        ;;
+    update)
+        print_header
+        echo -e "${FG_CYAN}[ccpkg]${RESET} Syncing package index..."
+        log_action "UPDATE"
+        apt-get update && echo -e "${FG_GREEN}[OK]${RESET} Index updated."
+        ;;
+    upgrade)
+        print_header
+        echo -e "${FG_CYAN}[ccpkg]${RESET} Upgrading all packages..."
+        log_action "UPGRADE"
+        apt-get upgrade -y && echo -e "${FG_GREEN}[OK]${RESET} System upgraded."
+        ;;
+    search)
+        shift
+        apt-cache search "$@"
+        ;;
+    list)
+        echo -e "${FG_CYAN}[ccpkg]${RESET} Installed packages:"
+        dpkg -l | grep "^ii" | awk '{print "  " $2 "\t" $3}'
+        ;;
+    store)
+        echo -e "${FG_CYAN}${BOLD}Crystal Globe App Store${RESET}"
+        echo ""
+        echo -e "  ${FG_GREEN}[FEATURED]${RESET}"
+        echo "  ccos-monitor     -- System monitor (CPU/RAM/disk/network)"
+        echo "  ccos-vault       -- Encrypted AES-256 secure storage"
+        echo "  ccos-fm          -- TUI file manager"
+        echo "  ccos-network     -- Network manager TUI"
+        echo "  ccos-capture     -- Screenshot + screen recorder"
+        echo "  avis-connector   -- AVIS-S G347 telemetry integration"
+        echo ""
+        echo -e "  Install any app: ${FG_CYAN}ccpkg install <name>${RESET}"
+        ;;
+    help|--help|-h|"")
+        print_header
+        echo "  Usage: ccpkg <command> [package]"
+        echo ""
+        echo "  Commands:"
+        echo "    install <pkg>   Install a package"
+        echo "    remove <pkg>    Remove a package"
+        echo "    update          Sync package index"
+        echo "    upgrade         Upgrade all packages"
+        echo "    search <term>   Search for packages"
+        echo "    list            List installed packages"
+        echo "    store           Browse Crystal Globe App Store"
+        echo ""
+        ;;
+    *)
+        echo -e "${FG_RED}[ccpkg]${RESET} Unknown command: $1  (try: ccpkg help)"
+        ;;
+esac
