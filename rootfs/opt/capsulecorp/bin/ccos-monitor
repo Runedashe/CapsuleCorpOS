@@ -1,0 +1,80 @@
+#!/bin/bash
+# ============================================================
+# ccos-monitor -- CapsuleCorpOS System Monitor
+# Real-time CPU, RAM, disk, network -- TUI panel
+# Crystal Globe Pty Ltd | Android #23
+# ============================================================
+
+export TERM=xterm-256color
+RESET="\e[0m"
+FG_CYAN="\e[38;2;0;220;255m"
+FG_GREEN="\e[38;2;0;255;140m"
+FG_YELLOW="\e[38;2;255;230;0m"
+FG_RED="\e[38;2;255;60;60m"
+FG_DIM="\e[38;2;100;110;130m"
+BOLD="\e[1m"
+
+bar() {
+    local pct=$1
+    local width=30
+    local filled=$(( pct * width / 100 ))
+    local empty=$(( width - filled ))
+    printf "${FG_CYAN}["
+    printf '%0.s#' $(seq 1 $filled) 2>/dev/null
+    printf '%0.s-' $(seq 1 $empty) 2>/dev/null
+    printf "]${RESET} ${pct}%%"
+}
+
+monitor_loop() {
+    while true; do
+        clear
+        echo -e "${FG_CYAN}${BOLD}"
+        printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+        echo "  CCOS SYSTEM MONITOR -- CapsuleCorpOS  |  $(date '+%d %b %Y %H:%M:%S')"
+        printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+        echo -e "${RESET}"
+
+        # CPU
+        CPU_IDLE=$(top -bn1 | grep "Cpu(s)" | awk '{print $8}' | tr -d '%id,' 2>/dev/null || echo "0")
+        CPU_USE=$(echo "100 - ${CPU_IDLE%.*}" | bc 2>/dev/null || echo "N/A")
+        echo -e "  ${FG_CYAN}CPU Usage:${RESET}   $(bar ${CPU_USE:-0})"
+
+        # RAM
+        RAM_TOTAL=$(free -m | awk '/^Mem:/{print $2}')
+        RAM_USED=$(free -m | awk '/^Mem:/{print $3}')
+        RAM_PCT=$(( RAM_USED * 100 / RAM_TOTAL ))
+        echo -e "  ${FG_CYAN}RAM Usage:${RESET}   $(bar $RAM_PCT)  (${RAM_USED}MB / ${RAM_TOTAL}MB)"
+
+        # Disk
+        DISK_USE=$(df / | awk 'NR==2{print $5}' | tr -d '%')
+        DISK_TOTAL=$(df -h / | awk 'NR==2{print $2}')
+        DISK_USED=$(df -h / | awk 'NR==2{print $3}')
+        echo -e "  ${FG_CYAN}Disk (/):${RESET}    $(bar ${DISK_USE:-0})  (${DISK_USED} / ${DISK_TOTAL})"
+
+        # Network
+        echo ""
+        echo -e "  ${FG_CYAN}Network Interfaces:${RESET}"
+        ip -brief addr show 2>/dev/null | while read -r iface state addr; do
+            echo -e "    ${FG_GREEN}${iface}${RESET}  ${state}  ${addr:-no address}"
+        done
+
+        # Processes
+        echo ""
+        echo -e "  ${FG_CYAN}Top Processes:${RESET}"
+        ps aux --sort=-%cpu 2>/dev/null | head -6 | tail -5 | \
+            awk '{printf "    %-20s CPU: %5s%%  MEM: %5s%%\n", $11, $3, $4}'
+
+        # Crystal Globe Grid
+        echo ""
+        echo -e "  ${FG_CYAN}Crystal Globe Grid:${RESET}"
+        echo -e "    ${FG_GREEN}CG-NODE-EARTH-001${RESET}  ONLINE  SA Current: ACTIVE"
+        echo -e "    ${FG_DIM}CG-NODE-TITAN-001  SIGNAL PENDING"
+        echo -e "    CG-NODE-GIRA-001   SIGNAL PENDING${RESET}"
+
+        echo ""
+        echo -e "  ${FG_DIM}Refreshing every 3s -- Press Ctrl+C to exit${RESET}"
+        sleep 3
+    done
+}
+
+monitor_loop
