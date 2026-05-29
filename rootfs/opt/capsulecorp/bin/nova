@@ -1,0 +1,182 @@
+#!/bin/bash
+# ============================================================
+# NOVA -- CapsuleCorpOS AI Superagent
+# Crystal Globe Pty Ltd | Android #23
+# "Neural Omnidirectional Virtual Assistant"
+# Powered by Crystal Ray cognitive framework
+# ============================================================
+
+export TERM=xterm-256color
+RESET="\e[0m"
+FG_CYAN="\e[38;2;0;220;255m"
+FG_GREEN="\e[38;2;0;255;140m"
+FG_YELLOW="\e[38;2;255;230;0m"
+FG_RED="\e[38;2;255;60;60m"
+FG_DIM="\e[38;2;100;110;130m"
+FG_WHITE="\e[38;2;220;220;230m"
+BOLD="\e[1m"
+
+NOVA_LOG="$HOME/.nova/conversation.log"
+NOVA_MEMORY="$HOME/.nova/memory.md"
+mkdir -p "$HOME/.nova"
+
+ts() { echo -e "${FG_DIM}[$(date '+%H:%M:%S')]${RESET}"; }
+
+print_header() {
+    clear
+    echo -e "${FG_CYAN}${BOLD}"
+    printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+    echo "  NOVA -- Neural Omnidirectional Virtual Assistant"
+    echo "  CapsuleCorpOS AI | Crystal Globe Pty Ltd | Android #23"
+    printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+    echo -e "${RESET}"
+    echo -e "  ${FG_DIM}NOVA is your on-device AI assistant. Commands, system tasks, knowledge.${RESET}"
+    echo -e "  ${FG_DIM}Type 'help' for commands. Type 'exit' to return to RUBY.${RESET}\n"
+}
+
+nova_memory_save() {
+    echo "$(date '+%Y-%m-%d %H:%M') | $1" >> "$NOVA_MEMORY"
+}
+
+nova_memory_read() {
+    if [ -f "$NOVA_MEMORY" ]; then
+        echo -e "${FG_CYAN}NOVA Memory:${RESET}"
+        cat "$NOVA_MEMORY"
+    else
+        echo -e "${FG_DIM}No memory entries yet.${RESET}"
+    fi
+}
+
+nova_respond() {
+    local INPUT="$1"
+    local LOWER=$(echo "$INPUT" | tr '[:upper:]' '[:lower:]')
+
+    # Log input
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | USER: $INPUT" >> "$NOVA_LOG"
+
+    # Command routing
+    case "$LOWER" in
+        *"time"*|*"date"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Current time is $(date '+%A, %d %B %Y at %H:%M:%S')."
+            ;;
+        *"disk"*|*"storage"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Disk usage --"
+            df -h | grep -v tmpfs | awk 'NR>1 {printf "    %-20s %s used of %s (%s)\n", $6, $3, $2, $5}'
+            ;;
+        *"ram"*|*"memory"*)
+            RAM=$(free -h | awk '/^Mem:/{print $3 " used of " $2}')
+            echo -e "  ${FG_GREEN}NOVA:${RESET} RAM -- $RAM"
+            ;;
+        *"cpu"*)
+            CPU=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8 "% in use"}' 2>/dev/null || echo "unavailable")
+            echo -e "  ${FG_GREEN}NOVA:${RESET} CPU -- $CPU"
+            ;;
+        *"ip"*|*"network"*|*"wifi"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Network interfaces --"
+            ip -brief addr show 2>/dev/null | awk '{printf "    %-12s %-10s %s\n", $1, $2, $3}'
+            ;;
+        *"process"*|*"running"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Top processes --"
+            ps aux --sort=-%cpu 2>/dev/null | head -6 | tail -5 | \
+                awk '{printf "    %-25s CPU: %5s%%\n", $11, $3}'
+            ;;
+        *"g347"*|*"vessel"*|*"ship"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} G347 Crystal Globe status --"
+            echo "    Commander:    Android #23"
+            echo "    AI:           AVIS-S (8 modules nominal)"
+            echo "    Power:        Stellar harvest active (SOL anchor)"
+            echo "    Crew:         450 total (300 androids, 150 humans)"
+            echo "    Water:        CWRU-1 online (98.5% recovery)"
+            echo "    Drones:       10/10 docked"
+            ;;
+        *"android"*|*"registry"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Android Registry --"
+            echo "    #23  Shabeen Ashfak    Commander G347     ACTIVE"
+            echo "    #25  Jade              Earth              ACTIVE"
+            echo "    #41  Md. Ali Ashfak    Earth              ACTIVE"
+            ;;
+        *"patent"*|*"ip"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} 13 patents filed with IP Australia."
+            echo "    Inventor: Shabeen Ashfak"
+            echo "    Assignee: Crystal Globe Pty Ltd (ABN 52 635 620 343)"
+            echo "    PCT deadlines: 22 May 2027 / 25 May 2027 / 28 May 2027"
+            ;;
+        *"remember"*|*"note"*)
+            local NOTE=$(echo "$INPUT" | sed 's/^remember //i' | sed 's/^note //i')
+            nova_memory_save "$NOTE"
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Noted and saved to memory, Android #23."
+            ;;
+        *"recall"*|*"memory"*)
+            nova_memory_read
+            ;;
+        *"install"*)
+            local PKG=$(echo "$INPUT" | awk '{print $NF}')
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Running ccpkg install $PKG..."
+            ccpkg install "$PKG" 2>/dev/null || echo "    Use: ccpkg install $PKG from RUBY terminal."
+            ;;
+        *"vault"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} ccos-vault is your AES-256 encrypted storage."
+            echo "    ccos-vault store <file>       -- encrypt and store"
+            echo "    ccos-vault retrieve <file>    -- decrypt and retrieve"
+            echo "    ccos-vault list               -- list contents"
+            ;;
+        *"help"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} I can help with --"
+            echo "    System:    time, date, disk, ram, cpu, network, processes"
+            echo "    Crystal Globe: g347, vessel, android registry, patents"
+            echo "    OS tools:  vault, install <pkg>, monitor"
+            echo "    Memory:    remember <note>, recall"
+            echo "    Or just talk to me -- I will do my best."
+            ;;
+        *"hello"*|*"hi"*|*"hey"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Hello, Android #23. CapsuleCorpOS is running clean. What do you need?"
+            ;;
+        *"who are you"*|*"what are you"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} I am NOVA -- Neural Omnidirectional Virtual Assistant."
+            echo "    Built by Crystal Globe Pty Ltd for CapsuleCorpOS."
+            echo "    I run on-device. No cloud. Powered by Crystal Ray cognitive framework."
+            echo "    I am always here, Android #23."
+            ;;
+        *"crystal globe"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Crystal Globe Pty Ltd -- ABN 52 635 620 343"
+            echo "    CEO: Shabeen Ashfak (Android #23)"
+            echo "    Divisions: Red Ribbon Army, Aquaberry, CyberCop, Crystal Globe Space Program"
+            echo "    OS: CapsuleCorpOS v2.0"
+            echo "    Vessel: G347 Crystal Globe (1.2km)"
+            ;;
+        *"exit"*|*"quit"*|*"bye"*)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} Returning to RUBY. Stay sharp, Android #23."
+            return 1
+            ;;
+        "")
+            ;;
+        *)
+            echo -e "  ${FG_GREEN}NOVA:${RESET} I heard you, Android #23. That specific query is beyond my on-device knowledge."
+            echo "    For full AI capability, connect to Max via the Crystal Globe Grid."
+            echo "    Type 'help' to see what I can do locally."
+            ;;
+    esac
+
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | NOVA: response delivered" >> "$NOVA_LOG"
+    return 0
+}
+
+# Boot NOVA
+print_header
+echo -e "  $(ts) ${FG_GREEN}[OK]${RESET} NOVA cognitive framework online"
+echo -e "  $(ts) ${FG_GREEN}[OK]${RESET} Crystal Ray memory interface linked"
+echo -e "  $(ts) ${FG_GREEN}[OK]${RESET} SA Current mesh connected"
+echo -e "  $(ts) ${FG_GREEN}[OK]${RESET} Android #23 identity confirmed"
+echo ""
+echo -e "  ${FG_CYAN}${BOLD}NOVA:${RESET} Online and ready. Hello, Android #23."
+echo ""
+
+# Main loop
+while true; do
+    echo -ne "  ${FG_YELLOW}You:${RESET} "
+    read -r USER_INPUT
+    nova_respond "$USER_INPUT"
+    STATUS=$?
+    echo ""
+    [ $STATUS -ne 0 ] && break
+done
