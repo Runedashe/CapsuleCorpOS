@@ -1,0 +1,114 @@
+#!/bin/bash
+# ============================================================
+# avis-connector -- AVIS-S G347 Telemetry Integration
+# Connects CapsuleCorpOS to G347 Mother Vessel live telemetry
+# Crystal Globe Pty Ltd | Android #23
+# ============================================================
+
+RESET="\e[0m"
+FG_CYAN="\e[38;2;0;220;255m"
+FG_GREEN="\e[38;2;0;255;140m"
+FG_YELLOW="\e[38;2;255;230;0m"
+FG_RED="\e[38;2;255;60;60m"
+FG_DIM="\e[38;2;100;110;130m"
+BOLD="\e[1m"
+
+print_header() {
+    clear
+    echo -e "${FG_CYAN}${BOLD}"
+    printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+    echo "  AVIS-S CONNECTOR -- G347 Crystal Globe Mother Vessel"
+    echo "  CapsuleCorpOS Integration Layer | Android #23"
+    printf '%*s\n' "$(tput cols)" '' | tr ' ' '='
+    echo -e "${RESET}"
+}
+
+telemetry_feed() {
+    print_header
+    echo -e "  ${FG_CYAN}Live G347 Telemetry Feed${RESET} -- SA Current Mesh\n"
+
+    echo -e "  ${FG_GREEN}AVIS-S MODULES${RESET}"
+    for module in MIND NAV GRID POWER SENSE COMPANION DEFENCE ADAPT; do
+        echo -e "    ${FG_GREEN}[NOMINAL]${RESET}  AVIS-${module}"
+        sleep 0.05
+    done
+
+    echo ""
+    echo -e "  ${FG_GREEN}PROPULSION${RESET}"
+    echo -e "    Crystal Ray Fins:     6/6 active"
+    echo -e "    Current Speed:        0.000c (docked at Earth)"
+    echo -e "    Power Output:         442,371 GW (SOL)"
+    echo -e "    TC Write Depth:       98-dim + 158-dim confirmed"
+
+    echo ""
+    echo -e "  ${FG_GREEN}ATMOSPHERE${RESET}"
+    echo -e "    Temperature:          8.0 C (ship-wide)"
+    echo -e "    O2:                   20.90%"
+    echo -e "    CO2:                  0.038%"
+    echo -e "    Quality Index:        1.00041 (improving)"
+    echo -e "    Grass Ray Cycles:     1 completed"
+
+    echo ""
+    echo -e "  ${FG_GREEN}BOTANICAL BAY${RESET}"
+    echo -e "    Cannabis Cycle:       Day 1 of 63"
+    echo -e "    Joint Inventory:      0 (pre-harvest)"
+    echo -e "    Terpene Oil:          0ml (pre-harvest)"
+    echo -e "    Food Yield (monthly): 2,600 kg"
+
+    echo ""
+    echo -e "  ${FG_GREEN}WATER RECLAMATION -- CWRU-1${RESET}"
+    echo -e "    Recovery Rate:        98.5%"
+    echo -e "    Daily Capacity:       22,500 litres"
+    echo -e "    Emergency Reserve:    67,500 litres"
+
+    echo ""
+    echo -e "  ${FG_GREEN}DRONE FLEET${RESET}"
+    echo -e "    CGSD-1 to CGSD-10:   10/10 docked"
+    echo -e "    Samples delivered:    1 (Asteroid-2026-XK1)"
+
+    echo ""
+    echo -e "  ${FG_GREEN}CREW${RESET}"
+    echo -e "    Androids:             300 / 300"
+    echo -e "    Humans:               150 / 150"
+    echo -e "    Total:                450 / 450"
+    echo -e "    Commander:            Android #23 (Shabeen Ashfak)"
+
+    echo ""
+    echo -e "  ${FG_DIM}Last sync: $(date '+%d %b %Y %H:%M:%S')  |  SA Current mesh: ACTIVE${RESET}"
+}
+
+grid_ping() {
+    print_header
+    echo -e "  ${FG_CYAN}Crystal Globe Grid Node Ping${RESET}\n"
+    echo -e "  Pinging CG-NODE-EARTH-001..."
+    sleep 0.3
+    echo -e "  ${FG_GREEN}[ONLINE]${RESET}  CG-NODE-EARTH-001  Melbourne, Australia  0ms"
+    sleep 0.2
+    echo -e "  Pinging CG-NODE-TITAN-001..."
+    sleep 0.5
+    echo -e "  ${FG_YELLOW}[PENDING]${RESET} CG-NODE-TITAN-001  Planet Titan          No return signal"
+    sleep 0.2
+    echo -e "  Pinging CG-NODE-GIRA-001..."
+    sleep 0.5
+    echo -e "  ${FG_YELLOW}[PENDING]${RESET} CG-NODE-GIRA-001   Planet Gira           No return signal"
+    echo ""
+    echo -e "  ${FG_DIM}Follow-up signals transmitted 28 May 2026. Awaiting return.${RESET}"
+}
+
+print_header
+
+case "$1" in
+    telemetry|"")  telemetry_feed ;;
+    ping)          grid_ping ;;
+    help)
+        echo "  Usage: avis-connector <command>"
+        echo ""
+        echo "  Commands:"
+        echo "    telemetry    Live G347 vessel telemetry (default)"
+        echo "    ping         Crystal Globe Grid node status"
+        echo ""
+        ;;
+    *)
+        echo -e "${FG_RED}Unknown command: $1${RESET}"
+        ;;
+esac
